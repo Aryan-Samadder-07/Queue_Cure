@@ -1,8 +1,7 @@
 import { Clock, Users } from 'lucide-react'
 
-export default function PatientWaitingView({ queue, settings }) {
+export default function PatientWaitingView({ queue, settings, calculatedAvgTime }) {
   const currentServingToken = settings?.current_serving_token || 0
-  const avgConsultationTime = settings?.avg_consultation_time || 15
 
   // Filter only waiting patients and sort by token number
   const waitingPatients = queue
@@ -16,9 +15,11 @@ export default function PatientWaitingView({ queue, settings }) {
       {/* Now Serving Card */}
       <div className="bg-white rounded-2xl p-8 shadow-md border-2 border-blue-200 flex flex-col items-center justify-center relative overflow-hidden group">
         <div className="absolute inset-0 bg-blue-500 opacity-5 group-hover:opacity-10 transition-opacity"></div>
-        <h3 className="text-xl font-bold text-blue-800 mb-2 uppercase tracking-wider">Now Serving Token</h3>
-        <div className="text-7xl font-extrabold text-blue-600 my-4 drop-shadow-sm">
-          {currentServingToken === 0 ? '--' : currentServingToken}
+        <h3 className="text-xl font-bold text-blue-800 mb-2 uppercase tracking-wider">
+          Now Serving Token : {currentServingToken === 0 ? '--' : currentServingToken}
+        </h3>
+        <div className="text-4xl font-extrabold text-blue-600 my-4 drop-shadow-sm">
+          {queue.find(q => q.status === 'in-consultation')?.patient_name || '--'}
         </div>
         
         {/* Find who is currently in consultation */}
@@ -49,15 +50,9 @@ export default function PatientWaitingView({ queue, settings }) {
         ) : (
           <div className="flex flex-col gap-4">
             {nextPatients.map((patient, index) => {
-              // Dynamic Wait Time Calculator
+              // Dynamic Wait Time Calculator using calculatedAvgTime
               const waitTokens = patient.token_number - currentServingToken
-              // If waitTokens is somehow <= 0, it means they are next or should already be called.
-              // A simple formula is (waitTokens * avg_consultation_time) - (avg_consultation_time) because 
-              // the first person is 'next' and waitTokens=1, so wait time should be ~avg_consultation_time.
-              // Actually, if I am token 5 and current is 2. I have to wait for 3, 4, then me.
-              // Wait time = (5 - 2) * 15 = 45 mins. This means I wait 45 mins from now.
-              // That includes the current person finishing + next ones.
-              const estimatedWaitTime = Math.max(0, waitTokens * avgConsultationTime)
+              const estimatedWaitTime = Math.max(0, waitTokens * calculatedAvgTime)
               
               return (
                 <div 
@@ -90,7 +85,7 @@ export default function PatientWaitingView({ queue, settings }) {
       
       {/* Footer Info */}
       <div className="text-center text-slate-400 text-xs font-medium px-4 py-2 bg-white rounded-lg border border-slate-100 shadow-sm">
-        Wait times are estimates based on an average consultation time of {avgConsultationTime} mins.
+        Wait times are estimates based on auto-calculated average consultation time of {calculatedAvgTime} mins.
       </div>
     </div>
   )

@@ -1,13 +1,13 @@
 import { useState } from 'react'
 import { supabase } from '../lib/supabase'
-import { PlusCircle, Play, Settings2, Users } from 'lucide-react'
+import { PlusCircle, Play, Settings2, Users, RefreshCw } from 'lucide-react'
 
-export default function ReceptionistView({ queue, settings }) {
+export default function ReceptionistView({ queue, settings, calculatedAvgTime }) {
   const [patientName, setPatientName] = useState('')
   const [addingPatient, setAddingPatient] = useState(false)
   const [callingNext, setCallingNext] = useState(false)
   const [updatingSettings, setUpdatingSettings] = useState(false)
-  const [avgTimeInput, setAvgTimeInput] = useState(settings?.avg_consultation_time || 15)
+  const [initialTimeInput, setInitialTimeInput] = useState(settings?.initial_avg_consultation_time || 15)
   const [error, setError] = useState(null)
 
   const waitingPatients = queue.filter(q => q.status === 'waiting')
@@ -45,22 +45,20 @@ export default function ReceptionistView({ queue, settings }) {
     setCallingNext(true)
     
     try {
-      // Calling the RPC function defined in the database
       const { error: rpcError } = await supabase.rpc('call_next_patient')
-      
       if (rpcError) throw rpcError
     } catch (err) {
       console.error(err)
-      setError("Failed to call next patient. Make sure the 'call_next_patient' RPC is created in Supabase.")
+      setError("Failed to call next patient.")
     } finally {
       setCallingNext(false)
     }
   }
 
-  const handleUpdateSettings = async (e) => {
+  const handleResetSettings = async (e) => {
     e.preventDefault()
-    if (!avgTimeInput || avgTimeInput <= 0) {
-      setError("Average time must be greater than 0.")
+    if (!initialTimeInput || initialTimeInput <= 0) {
+      setError("Initial time must be greater than 0.")
       return
     }
 
@@ -70,13 +68,16 @@ export default function ReceptionistView({ queue, settings }) {
     try {
       const { error: updateError } = await supabase
         .from('settings')
-        .update({ avg_consultation_time: parseInt(avgTimeInput, 10) })
+        .update({ 
+          initial_avg_consultation_time: parseInt(initialTimeInput, 10),
+          reset_at: new Date().toISOString()
+        })
         .eq('id', 1)
 
       if (updateError) throw updateError
     } catch (err) {
       console.error(err)
-      setError("Failed to update settings.")
+      setError("Failed to reset settings.")
     } finally {
       setUpdatingSettings(false)
     }
@@ -148,38 +149,44 @@ export default function ReceptionistView({ queue, settings }) {
         </div>
 
         {/* Settings Modifier */}
-        <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
-          <h3 className="text-md font-semibold text-slate-800 mb-4 flex items-center gap-2">
-            <Settings2 className="w-5 h-5 text-purple-500" />
-            Clinic Settings
-          </h3>
-          <form onSubmit={handleUpdateSettings} className="flex flex-col gap-3">
-            <div>
-              <label className="block text-sm font-medium text-slate-600 mb-1">
-                Avg. Consultation Time (min)
-              </label>
-              <div className="flex items-center gap-2">
-                <input
-                  type="number"
-                  min="1"
-                  value={avgTimeInput}
-                  onChange={(e) => setAvgTimeInput(e.target.value)}
-                  className="w-full px-4 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
-                  disabled={updatingSettings}
-                />
-                <button
-                  type="submit"
-                  disabled={updatingSettings || parseInt(avgTimeInput) === settings?.avg_consultation_time}
-                  className="bg-purple-100 hover:bg-purple-200 text-purple-700 px-4 py-2 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed h-10 whitespace-nowrap"
-                >
-                  {updatingSettings ? 'Saving...' : 'Update'}
-                </button>
+        <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm flex flex-col justify-between">
+          <div>
+            <h3 className="text-md font-semibold text-slate-800 mb-4 flex items-center gap-2">
+              <Settings2 className="w-5 h-5 text-purple-500" />
+              Consultation Time Settings
+            </h3>
+            <form onSubmit={handleResetSettings} className="flex flex-col gap-3">
+              <div>
+                <label className="block text-sm font-medium text-slate-600 mb-1">
+                  Initial / Reset Avg. Time (min)
+                </label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    min="1"
+                    value={initialTimeInput}
+                    onChange={(e) => setInitialTimeInput(e.target.value)}
+                    className="w-full px-4 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                    disabled={updatingSettings}
+                  />
+                  <button
+                    type="submit"
+                    disabled={updatingSettings}
+                    className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed h-10 whitespace-nowrap flex items-center gap-1"
+                  >
+                    <RefreshCw className="w-4 h-4" />
+                    Reset
+                  </button>
+                </div>
               </div>
-            </div>
-            <p className="text-xs text-slate-500 mt-2">
-              This is used to calculate estimated wait times for patients in the waiting room dynamically.
-            </p>
-          </form>
+            </form>
+          </div>
+          <div className="mt-4 pt-3 border-t border-slate-100 flex justify-between items-center text-sm">
+            <span className="text-slate-500 font-medium">Current Auto-Avg:</span>
+            <span className="text-purple-600 font-bold bg-purple-50 px-3 py-1 rounded-full text-base">
+              {calculatedAvgTime} min
+            </span>
+          </div>
         </div>
       </div>
     </div>
