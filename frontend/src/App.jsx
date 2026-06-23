@@ -303,7 +303,18 @@ function App() {
               <PatientWaitingView 
                 queue={queue} 
                 doctors={doctors}
-                onOpenNewWindow={() => window.open(`${window.location.origin}${window.location.pathname}?standalone=true#waiting`, '_blank', 'width=1000,height=800,menubar=no,toolbar=no,location=no,status=no')}
+                onOpenNewWindow={() => {
+                  const url = `${window.location.origin}${window.location.pathname}?standalone=true#waiting`;
+                  const popup = window.open(
+                    url, 
+                    '_blank', 
+                    'width=1000,height=800,menubar=no,toolbar=no,location=no,status=no'
+                  );
+                  if (!popup || popup.closed || typeof popup.closed === 'undefined') {
+                    // Fallback to opening in a new tab if popup blocker blocked it
+                    window.open(url, '_blank');
+                  }
+                }}
               />
             </div>
           ) : (
