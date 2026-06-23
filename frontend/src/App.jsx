@@ -1,34 +1,45 @@
 import { useEffect, useState } from 'react'
 import { supabase } from './lib/supabase'
 import ReceptionistView from './components/ReceptionistView'
+import DoctorDashboardView from './components/DoctorDashboardView'
 import PatientWaitingView from './components/PatientWaitingView'
 import { Stethoscope } from 'lucide-react'
 
 function App() {
   const [queue, setQueue] = useState([])
-  const [settings, setSettings] = useState({ current_serving_token: 0, initial_avg_consultation_time: 15, reset_at: null })
+  const [doctors, setDoctors] = useState([])
+  const [sessions, setSessions] = useState([])
   const [loading, setLoading] = useState(true)
 
   const fetchData = async () => {
-    // Fetch Settings
-    const { data: settingsData, error: settingsError } = await supabase
-      .from('settings')
+    // 1. Fetch Doctors (replaces settings)
+    const { data: doctorsData, error: doctorsError } = await supabase
+      .from('doctors')
       .select('*')
-      .eq('id', 1)
-      .single()
+      .order('created_at', { ascending: true })
       
-    if (!settingsError && settingsData) {
-      setSettings(settingsData)
+    if (!doctorsError && doctorsData) {
+      setDoctors(doctorsData)
     }
 
-    // Fetch Queue
+    // 2. Fetch Queue
     const { data: queueData, error: queueError } = await supabase
       .from('queue')
       .select('*')
-      .order('token_number', { ascending: true })
+      .order('slot_number', { ascending: true })
       
     if (!queueError && queueData) {
       setQueue(queueData)
+    }
+
+    // 3. Fetch Sessions
+    const { data: sessionsData, error: sessionsError } = await supabase
+      .from('sessions')
+      .select('*')
+      .order('created_at', { ascending: false })
+
+    if (!sessionsError && sessionsData) {
+      setSessions(sessionsData)
     }
     
     setLoading(false)
@@ -42,17 +53,22 @@ function App() {
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'queue' },
-        (payload) => {
+        () => {
           fetchData()
         }
       )
       .on(
         'postgres_changes',
-        { event: '*', schema: 'public', table: 'settings' },
-        (payload) => {
-          if (payload.new && payload.new.id === 1) {
-            setSettings(payload.new)
-          }
+        { event: '*', schema: 'public', table: 'doctors' },
+        () => {
+          fetchData()
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'sessions' },
+        () => {
+          fetchData()
         }
       )
       .subscribe()
@@ -61,35 +77,6 @@ function App() {
       supabase.removeChannel(channel)
     }
   }, [])
-
-  // Calculate dynamic average consultation time
-  const getCalculatedAvgTime = () => {
-    const initialTime = settings?.initial_avg_consultation_time ?? 15
-    if (!settings?.reset_at) return initialTime
-
-    const resetTime = new Date(settings.reset_at)
-
-    // Filter patients called after reset_at
-    const calledPatients = queue
-      .filter(q => q.called_at && new Date(q.called_at) >= resetTime)
-      .sort((a, b) => new Date(a.called_at) - new Date(b.called_at))
-
-    if (calledPatients.length < 2) {
-      return initialTime
-    }
-
-    let totalMinutes = 0
-    for (let i = 1; i < calledPatients.length; i++) {
-      const diffMs = new Date(calledPatients[i].called_at) - new Date(calledPatients[i - 1].called_at)
-      totalMinutes += diffMs / (1000 * 60)
-    }
-
-    const calculatedAvg = totalMinutes / (calledPatients.length - 1)
-    // Round to nearest integer, minimum 1 min
-    return Math.max(1, Math.round(calculatedAvg))
-  }
-
-  const calculatedAvgTime = getCalculatedAvgTime()
 
   if (loading) {
     return (
@@ -112,32 +99,43 @@ function App() {
       </header>
       
       <main className="flex-1 p-6 flex flex-col lg:flex-row gap-6 max-w-screen-2xl mx-auto w-full">
-        {/* Receptionist View (Left Side) */}
-        <div className="flex-1 flex flex-col bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-          <div className="bg-slate-50 px-6 py-4 border-b border-slate-200">
-            <h2 className="text-lg font-semibold text-slate-700">Receptionist Dashboard</h2>
+        {/* Left Side: Receptionist & Doctor Dashboards */}
+        <div className="flex-1 flex flex-col gap-6">
+          {/* Receptionist View (Left Top) */}
+          <div className="flex flex-col bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+            <div className="bg-slate-50 px-6 py-4 border-b border-slate-200">
+              <h2 className="text-lg font-semibold text-slate-700">Receptionist Dashboard</h2>
+            </div>
+            <div className="p-6">
+              <ReceptionistView 
+                queue={queue} 
+                doctors={doctors} 
+                sessions={sessions}
+              />
+            </div>
           </div>
-          <div className="p-6 flex-1">
-            <ReceptionistView 
-              queue={queue} 
-              settings={settings} 
-              calculatedAvgTime={calculatedAvgTime} 
-            />
+
+          {/* Doctor Dashboard View (Left Bottom) */}
+          <div className="flex flex-col bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+            <div className="bg-rose-50 px-6 py-4 border-b border-rose-100">
+              <h2 className="text-lg font-semibold text-rose-800">Doctor Dashboard</h2>
+            </div>
+            <div className="p-6">
+              <DoctorDashboardView 
+                queue={queue} 
+                doctors={doctors} 
+                sessions={sessions}
+              />
+            </div>
           </div>
         </div>
 
         {/* Patient View (Right Side) */}
         <div className="flex-1 flex flex-col bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-          <div className="bg-blue-50 px-6 py-4 border-b border-blue-100">
-            <h2 className="text-lg font-semibold text-blue-800">Waiting Room</h2>
-          </div>
-          <div className="p-6 flex-1 bg-gradient-to-br from-white to-blue-50/50">
-            <PatientWaitingView 
-              queue={queue} 
-              settings={settings} 
-              calculatedAvgTime={calculatedAvgTime} 
-            />
-          </div>
+          <PatientWaitingView 
+            queue={queue} 
+            doctors={doctors}
+          />
         </div>
       </main>
     </div>
