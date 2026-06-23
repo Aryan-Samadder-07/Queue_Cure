@@ -10,6 +10,17 @@ function App() {
   const [doctors, setDoctors] = useState([])
   const [sessions, setSessions] = useState([])
   const [loading, setLoading] = useState(true)
+  const [showPopupWarning, setShowPopupWarning] = useState(false)
+
+  // Auto-dismiss the popup warning toast after 7 seconds
+  useEffect(() => {
+    if (showPopupWarning) {
+      const timer = setTimeout(() => {
+        setShowPopupWarning(false)
+      }, 7000)
+      return () => clearTimeout(timer)
+    }
+  }, [showPopupWarning])
 
   // Dev / Prod view mode state
   const [isDevView, setIsDevView] = useState(() => {
@@ -311,6 +322,7 @@ function App() {
                     'width=1000,height=800,menubar=no,toolbar=no,location=no,status=no'
                   );
                   if (!popup || popup.closed || typeof popup.closed === 'undefined') {
+                    setShowPopupWarning(true);
                     // Fallback to opening in a new tab if popup blocker blocked it
                     window.open(url, '_blank');
                   }
@@ -332,6 +344,24 @@ function App() {
             </div>
           )}
         </main>
+      )}
+
+      {/* Popup Blocker Warning Toast */}
+      {showPopupWarning && (
+        <div className="fixed top-4 right-4 z-50 max-w-sm bg-amber-50 border-l-4 border-amber-500 text-amber-900 p-4 rounded-r-xl shadow-lg flex items-start gap-3 animate-fade-in">
+          <div className="flex-1">
+            <h4 className="font-bold text-sm">Popup Blocker/Ad Blocker Detected</h4>
+            <p className="text-xs text-amber-700 mt-0.5 leading-relaxed">
+              We opened the Waiting Room in a new tab as a fallback. For the premium borderless window experience, please allow popups for this site.
+            </p>
+          </div>
+          <button 
+            onClick={() => setShowPopupWarning(false)}
+            className="text-amber-500 hover:text-amber-800 text-xs font-bold px-1 focus:outline-none"
+          >
+            ✕
+          </button>
+        </div>
       )}
     </div>
   )
