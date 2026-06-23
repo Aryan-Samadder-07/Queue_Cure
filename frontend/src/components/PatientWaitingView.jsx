@@ -122,70 +122,72 @@ export default function PatientWaitingView({ queue, doctors, onOpenNewWindow }) 
       {/* Main Content Area */}
       <div className="p-6 flex-1 bg-gradient-to-br from-white to-blue-50/50 flex flex-col gap-6 overflow-y-auto min-h-0">
         {/* Patient Token Lookup Box */}
-        <div className="bg-white rounded-xl p-5 shadow-sm border border-slate-200 flex-shrink-0">
-          <h3 className="text-sm font-bold text-slate-700 mb-2 flex items-center gap-2">
-            <HelpCircle className="w-4 h-4 text-blue-500" />
-            Check Your Token Number
-          </h3>
-          <div className="flex flex-col gap-3">
-            <div className="relative">
-              <Search className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
-              <input
-                type="text"
-                placeholder="Enter your exact name..."
-                value={searchName}
-                onChange={(e) => setSearchName(e.target.value)}
-                className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
-              />
-            </div>
+        {!window.location.search.includes("standalone=true") && (
+          <div className="bg-white rounded-xl p-5 shadow-sm border border-slate-200 flex-shrink-0">
+            <h3 className="text-sm font-bold text-slate-700 mb-2 flex items-center gap-2">
+              <HelpCircle className="w-4 h-4 text-blue-500" />
+              Check Your Token Number
+            </h3>
+            <div className="flex flex-col gap-3">
+              <div className="relative">
+                <Search className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
+                <input
+                  type="text"
+                  placeholder="Enter your exact name..."
+                  value={searchName}
+                  onChange={(e) => setSearchName(e.target.value)}
+                  className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+                />
+              </div>
 
-            {searchResult && (
-              <div className="p-3.5 rounded-lg border animate-fade-in text-xs bg-slate-50">
-                {searchResult.found ? (
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <div className="font-bold text-slate-800 text-sm">
-                        {searchResult.patient.patient_name}
-                      </div>
-                      <div className="text-slate-500 mt-1">
-                        Doctor: {searchResult.doctorName} (Chamber{" "}
-                        {searchResult.chamber})
-                      </div>
-                      <div className="mt-1 font-medium">
-                        Status:{" "}
-                        <span
-                          className={`capitalize ${
-                            searchResult.patient.status === "completed"
-                              ? "text-green-600"
-                              : searchResult.patient.status ===
+              {searchResult && (
+                <div className="p-3.5 rounded-lg border animate-fade-in text-xs bg-slate-50">
+                  {searchResult.found ? (
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <div className="font-bold text-slate-800 text-sm">
+                          {searchResult.patient.patient_name}
+                        </div>
+                        <div className="text-slate-500 mt-1">
+                          Doctor: {searchResult.doctorName} (Chamber{" "}
+                          {searchResult.chamber})
+                        </div>
+                        <div className="mt-1 font-medium">
+                          Status:{" "}
+                          <span
+                            className={`capitalize ${
+                              searchResult.patient.status === "completed"
+                                ? "text-green-600"
+                                : searchResult.patient.status ===
                                   "in-consultation"
                                 ? "text-blue-600"
                                 : "text-amber-600"
-                          }`}
-                        >
-                          {searchResult.patient.status}
+                            }`}
+                          >
+                            {searchResult.patient.status}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="text-right">
+                        <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400 block">
+                          Your Token
+                        </span>
+                        <span className="text-lg font-extrabold text-blue-600">
+                          {searchResult.patient.token_string}
                         </span>
                       </div>
                     </div>
-
-                    <div className="text-right">
-                      <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400 block">
-                        Your Token
-                      </span>
-                      <span className="text-lg font-extrabold text-blue-600">
-                        {searchResult.patient.token_string}
-                      </span>
+                  ) : (
+                    <div className="text-red-500 font-medium">
+                      No patient found matching "{searchName}".
                     </div>
-                  </div>
-                ) : (
-                  <div className="text-red-500 font-medium">
-                    No patient found matching "{searchName}".
-                  </div>
-                )}
-              </div>
-            )}
+                  )}
+                </div>
+              )}
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Doctor Queue Card */}
         <div className="flex-1 min-h-0 flex flex-col">

@@ -100,7 +100,13 @@ function App() {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-slate-50">
         <div className="flex flex-col items-center text-blue-600 animate-pulse">
-          <Stethoscope size={48} className="mb-4" />
+          <div className="w-16 h-16 mb-4 flex items-center justify-center">
+            <img 
+              src="/favicon.png" 
+              alt="Queue Cure Logo" 
+              className="w-full h-full object-contain"
+            />
+          </div>
           <h1 className="text-xl font-bold">Loading Queue Cure...</h1>
         </div>
       </div>
@@ -161,8 +167,12 @@ function App() {
       {/* Clinic App Header */}
       <header className="bg-white shadow-sm px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <div className="bg-blue-600 p-2 rounded-lg text-white">
-            <Stethoscope size={24} />
+          <div className="w-10 h-10 flex items-center justify-center">
+            <img 
+              src="/favicon.png" 
+              alt="Queue Cure Logo" 
+              className="w-full h-full object-contain"
+            />
           </div>
           <h1 className="text-2xl font-bold text-slate-800 tracking-tight">Queue Cure</h1>
         </div>
@@ -293,7 +303,7 @@ function App() {
               <PatientWaitingView 
                 queue={queue} 
                 doctors={doctors}
-                onOpenNewWindow={() => window.open('/?standalone=true#waiting', '_blank', 'width=1000,height=800,menubar=no,toolbar=no,location=no,status=no')}
+                onOpenNewWindow={() => window.open(`${window.location.origin}${window.location.pathname}?standalone=true#waiting`, '_blank', 'width=1000,height=800,menubar=no,toolbar=no,location=no,status=no')}
               />
             </div>
           ) : (
