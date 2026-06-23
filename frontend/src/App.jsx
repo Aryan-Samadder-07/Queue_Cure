@@ -323,8 +323,6 @@ function App() {
                   );
                   if (!popup || popup.closed || typeof popup.closed === 'undefined') {
                     setShowPopupWarning(true);
-                    // Fallback to opening in a new tab if popup blocker blocked it
-                    window.open(url, '_blank');
                   }
                 }}
               />
@@ -346,14 +344,22 @@ function App() {
         </main>
       )}
 
-      {/* Popup Blocker Warning Toast */}
       {showPopupWarning && (
         <div className="fixed top-4 right-4 z-50 max-w-sm bg-amber-50 border-l-4 border-amber-500 text-amber-900 p-4 rounded-r-xl shadow-lg flex items-start gap-3 animate-fade-in">
-          <div className="flex-1">
+          <div className="flex-1 flex flex-col items-start">
             <h4 className="font-bold text-sm">Popup Blocker/Ad Blocker Detected</h4>
             <p className="text-xs text-amber-700 mt-0.5 leading-relaxed">
-              We opened the Waiting Room in a new tab as a fallback. For the premium borderless window experience, please allow popups for this site.
+              Your browser or ad blocker blocked the standalone window. For the premium borderless experience, please allow popups. Or, click below to open in a standard tab:
             </p>
+            <a 
+              href={`${window.location.origin}${window.location.pathname}?standalone=true#waiting`} 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="mt-2.5 inline-flex items-center justify-center bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold px-3 py-1.5 rounded-lg shadow-sm transition-all focus:outline-none"
+              onClick={() => setShowPopupWarning(false)}
+            >
+              Open in New Tab
+            </a>
           </div>
           <button 
             onClick={() => setShowPopupWarning(false)}
