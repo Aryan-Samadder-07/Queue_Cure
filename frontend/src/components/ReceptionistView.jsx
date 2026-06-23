@@ -9,6 +9,7 @@ import {
   Search,
   UserCheck,
   Download,
+  Trash2,
 } from "lucide-react";
 export default function ReceptionistView({ queue, doctors, sessions }) {
   const [patientName, setPatientName] = useState("");
@@ -17,6 +18,12 @@ export default function ReceptionistView({ queue, doctors, sessions }) {
   const [updatingSettings, setUpdatingSettings] = useState(false);
   const [initialTimeInput, setInitialTimeInput] = useState(15);
   const [error, setError] = useState(null);
+
+  // Remove Patient state
+  const [removeName, setRemoveName] = useState("");
+  const [removeToken, setRemoveToken] = useState("");
+  const [removingPatient, setRemovingPatient] = useState(false);
+  const [removeSuccess, setRemoveSuccess] = useState(false);
 
   // Search and selection of doctor
   const [searchQuery, setSearchQuery] = useState("");
@@ -104,6 +111,34 @@ export default function ReceptionistView({ queue, doctors, sessions }) {
       setError("Failed to check in patient.");
     } finally {
       setAddingPatient(false);
+    }
+  };
+  const handleRemovePatient = async (e) => {
+    e.preventDefault();
+    if (!removeName.trim() || !removeToken.trim()) {
+      setError("Please enter both Name and Token Number to remove a patient.");
+      return;
+    }
+    setError(null);
+    setRemovingPatient(true);
+    setRemoveSuccess(false);
+    try {
+      const { error: deleteError } = await supabase
+        .from("queue")
+        .delete()
+        .eq("patient_name", removeName.trim())
+        .eq("token_string", removeToken.trim());
+
+      if (deleteError) throw deleteError;
+
+      setRemoveName("");
+      setRemoveToken("");
+      setRemoveSuccess(true);
+    } catch (err) {
+      console.error(err);
+      setError("Failed to remove patient: " + err.message);
+    } finally {
+      setRemovingPatient(false);
     }
   };
   const handleResetSettings = async (e) => {
@@ -435,6 +470,65 @@ export default function ReceptionistView({ queue, doctors, sessions }) {
               <span className="text-2xl font-extrabold tracking-tight mt-1">
                 {lastAddedToken || lastTokenInQueue}
               </span>
+            </div>
+          )}
+        </div>
+
+        {/* Remove Patient Form */}
+        <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm relative overflow-hidden flex flex-col justify-between animate-fade-in">
+          <div>
+            <h3 className="text-md font-semibold text-slate-800 mb-4 flex items-center gap-2">
+              <Trash2 className="w-5 h-5 text-red-500" />
+              Remove Patient
+            </h3>
+
+            <form onSubmit={handleRemovePatient} className="flex flex-col gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-600 mb-1">
+                    Patient Name
+                  </label>
+                  <input
+                    type="text"
+                    value={removeName}
+                    onChange={(e) => {
+                      setRemoveName(e.target.value);
+                      setRemoveSuccess(false);
+                    }}
+                    placeholder="e.g. Jane Doe"
+                    className="w-full px-4 py-2 bg-slate-50 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all"
+                    disabled={removingPatient}
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-600 mb-1">
+                    Token Number
+                  </label>
+                  <input
+                    type="text"
+                    value={removeToken}
+                    onChange={(e) => {
+                      setRemoveToken(e.target.value);
+                      setRemoveSuccess(false);
+                    }}
+                    placeholder="e.g. JD-101-1"
+                    className="w-full px-4 py-2 bg-slate-50 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all"
+                    disabled={removingPatient}
+                  />
+                </div>
+              </div>
+              <button
+                type="submit"
+                disabled={removingPatient || !removeName.trim() || !removeToken.trim()}
+                className="mt-2 w-full bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex justify-center items-center h-10"
+              >
+                {removingPatient ? "Removing..." : "Remove Patient"}
+              </button>
+            </form>
+          </div>
+          {removeSuccess && (
+            <div className="mt-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg flex items-center justify-center text-xs font-semibold animate-fade-in shadow-sm">
+              Patient removed successfully!
             </div>
           )}
         </div>

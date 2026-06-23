@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Clock, Users, Search, HelpCircle } from "lucide-react";
 
-export default function PatientWaitingView({ queue, doctors }) {
+export default function PatientWaitingView({ queue, doctors, onOpenNewWindow }) {
   const [searchName, setSearchName] = useState("");
   const [selectedRoom, setSelectedRoom] = useState("");
 
@@ -86,25 +86,37 @@ export default function PatientWaitingView({ queue, doctors }) {
       <div className="bg-blue-50 px-6 py-4 border-b border-blue-100 flex items-center justify-between flex-shrink-0">
         <h2 className="text-lg font-semibold text-blue-800">Waiting Room</h2>
 
-        {/* Room Selector Dropdown */}
-        {rooms.length > 0 && (
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-bold text-blue-700 uppercase tracking-wider">
-              Room:
-            </span>
-            <select
-              value={selectedRoom}
-              onChange={(e) => setSelectedRoom(e.target.value)}
-              className="bg-white border border-blue-200 text-blue-800 text-xs font-bold px-3 py-1.5 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+        <div className="flex items-center gap-3">
+          {/* Room Selector Dropdown */}
+          {rooms.length > 0 && (
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-bold text-blue-700 uppercase tracking-wider">
+                Room:
+              </span>
+              <select
+                value={selectedRoom}
+                onChange={(e) => setSelectedRoom(e.target.value)}
+                className="bg-white border border-blue-200 text-blue-800 text-xs font-bold px-3 py-1.5 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+              >
+                {rooms.map((room) => (
+                  <option key={room} value={room}>
+                    Room {room}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {/* Open in New Window Button */}
+          {onOpenNewWindow && (
+            <button
+              onClick={onOpenNewWindow}
+              className="text-xs bg-white text-blue-800 border border-blue-200 px-3 py-1.5 rounded-lg font-bold hover:bg-blue-50/50 shadow-sm transition-all"
             >
-              {rooms.map((room) => (
-                <option key={room} value={room}>
-                  Room {room}
-                </option>
-              ))}
-            </select>
-          </div>
-        )}
+              Open in New Window
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Main Content Area */}
@@ -225,29 +237,24 @@ export default function PatientWaitingView({ queue, doctors }) {
                   </div>
 
                   {/* Now Serving Panel */}
-                  <div className="p-4 bg-gradient-to-br from-white to-blue-50/20 border-b border-slate-100 flex items-center justify-between flex-shrink-0">
-                    <div>
-                      <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400">
-                        Patient Name
-                      </span>
-                      <div className="text-xl font-extrabold text-slate-800 mt-1">
-                        {currentlyServingPatient ? (
-                          currentlyServingPatient.patient_name
-                        ) : (
-                          <span className="text-slate-400 italic font-normal text-sm">
-                            No patient in cabin
-                          </span>
-                        )}
-                      </div>
+                  <div className="p-6 bg-blue-50/30 border-b border-slate-100 flex flex-col items-center justify-center text-center flex-shrink-0 gap-1.5 animate-fade-in">
+                    <span className="text-[10px] uppercase font-extrabold tracking-wider text-blue-600">
+                      Now Serving
+                    </span>
+                    <div className="text-5xl font-black text-blue-700 tracking-tight">
+                      {currentServingToken}
                     </div>
-
-                    <div className="text-right">
-                      <span className="text-[10px] uppercase font-bold tracking-wider text-blue-600 block">
-                        Now Serving
-                      </span>
-                      <div className="text-3xl font-extrabold text-blue-700 mt-1">
-                        {currentServingToken}
-                      </div>
+                    <div className="text-sm font-semibold text-slate-700 mt-1">
+                      {currentlyServingPatient ? (
+                        <span className="flex items-center gap-1.5">
+                          <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-ping"></span>
+                          <span>{currentlyServingPatient.patient_name}</span>
+                        </span>
+                      ) : (
+                        <span className="text-slate-400 italic font-normal">
+                          No patient in cabin
+                        </span>
+                      )}
                     </div>
                   </div>
 
